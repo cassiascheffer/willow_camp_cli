@@ -1,0 +1,114 @@
+# Willow Camp CLI
+
+A command-line interface for managing blog posts on a willow.camp.
+
+## Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem 'willow_camp_cli'
+```
+
+And then execute:
+
+```bash
+$ bundle install
+```
+
+Or install it yourself as:
+
+```bash
+$ gem install willow_camp_cli
+```
+## Usage
+
+```
+Usage: willow-camp COMMAND [options]
+
+Commands:
+  list                List all posts
+  show                Show a single post by slug
+  create              Create a new post from a Markdown file
+  update              Update an existing post by slug
+  delete              Delete a post by slug
+  upload              Bulk upload posts from a directory
+  download            Download a post to a Markdown file
+  help                Show this help message
+
+Options:
+  -u, --url URL                  API URL (e.g., https://yourblog.example.com)
+  -t, --token TOKEN              API Bearer Token
+  -d, --directory DIRECTORY      Directory containing Markdown files (for upload)
+  -f, --file FILE                Single Markdown file (for create/update)
+  -s, --slug SLUG                Post slug (for show/update/delete/download)
+  -o, --output FILE              Output file (for download)
+      --dry-run                  Show what would be done without making actual changes
+  -v, --verbose                  Show detailed output
+  -h, --help                     Show this help message
+```
+
+## Examples
+
+### List all posts
+
+```bash
+willow-camp list -u https://yourblog.example.com -t your-api-token
+```
+
+### Show a single post
+
+```bash
+willow-camp show -u https://yourblog.example.com -t your-api-token -s my-post-slug
+```
+
+### Create a new post from a Markdown file
+
+```bash
+willow-camp create -u https://yourblog.example.com -t your-api-token -f path/to/post.md
+```
+
+### Update an existing post
+
+```bash
+willow-camp update -u https://yourblog.example.com -t your-api-token -s my-post-slug -f path/to/updated-post.md
+```
+
+### Delete a post
+
+```bash
+willow-camp delete -u https://yourblog.example.com -t your-api-token -s my-post-slug
+```
+
+### Bulk upload posts from a directory
+
+```bash
+willow-camp upload -u https://yourblog.example.com -t your-api-token -d path/to/markdown/files
+```
+
+### Download a post to a file
+
+```bash
+willow-camp download -u https://yourblog.example.com -t your-api-token -s my-post-slug -o path/to/save.md
+```
+
+## Environment Variables
+
+You can set default API URL and token using environment variables:
+
+```bash
+export WILLOW_API_URL="https://yourblog.example.com"
+export WILLOW_API_TOKEN="your-api-token"
+```
+
+If these environment variables are set, you don't need to provide the `-u` and `-t` options.
+
+## Development
+
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+
+To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+
+## Contributing
+
+Bug reports and pull requests are welcome on GitHub at https://github.com/yourusername/willow_camp.
