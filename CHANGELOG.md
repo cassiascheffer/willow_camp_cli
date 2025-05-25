@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.2] - 2025-05-25
+
+- Bumping version for CI
+
 ## [0.1.1] - 2025-05-25
 
 - Added ghost-import command to convert Ghost blog exports to willow.camp markdown format
