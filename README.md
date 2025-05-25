@@ -34,6 +34,7 @@ Commands:
   delete              Delete a post by slug
   upload              Bulk upload posts from a directory
   download            Download a post to a Markdown file
+  ghost-import        Import posts from a Ghost export file
   help                Show this help message
 
 Options:
@@ -43,6 +44,8 @@ Options:
   -f, --file FILE                Single Markdown file (for create/update)
   -s, --slug SLUG                Post slug (for show/update/delete/download)
   -o, --output FILE              Output file (for download)
+  -g, --ghost-export FILE        Ghost export JSON file
+      --output-dir DIRECTORY     Output directory for Ghost import (default: 'markdown')
       --dry-run                  Show what would be done without making actual changes
   -v, --verbose                  Show detailed output
   -h, --help                     Show this help message
@@ -90,6 +93,16 @@ willow-camp upload -u https://yourblog.example.com -t your-api-token -d path/to/
 
 ```bash
 willow-camp download -u https://yourblog.example.com -t your-api-token -s my-post-slug -o path/to/save.md
+```
+
+### Import posts from a Ghost export file
+
+```bash
+# Just convert to Markdown files
+willow-camp ghost-import --ghost-export path/to/ghost-export.json --output-dir path/to/output
+
+# Convert and upload in one step
+willow-camp ghost-import -t your-api-token -g path/to/ghost-export.json --output-dir path/to/output
 ```
 
 ## Environment Variables

@@ -4,6 +4,7 @@ require "net/http"
 require "optparse"
 require "pathname"
 require "colorize"
+require "fileutils"
 
 module WillowCampCLI
   class CLI
@@ -155,9 +156,129 @@ module WillowCampCLI
       end
     end
 
+    # Import posts from a Ghost export file
+    def ghost_import(ghost_export_file, output_dir = "markdown")
+      return puts "Error: Ghost export file is required".red unless ghost_export_file
+      return puts "Error: Ghost export file not found: #{ghost_export_file}".red unless File.exist?(ghost_export_file)
+
+      puts "🔍 Processing Ghost export file: #{ghost_export_file}...".blue
+      
+      begin
+        # Create output directory if it doesn't exist
+        FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
+        
+        # Parse JSON export file
+        ghost_data = JSON.parse(File.read(ghost_export_file))
+        
+        posts = ghost_data["db"][0]["data"]["posts"].select { |post| post["status"] == "published" }
+        
+        if posts.empty?
+          puts "❌ No published posts found in the Ghost export".red
+          return
+        end
+        
+        puts "Found #{posts.size} published posts".green
+        
+        # Process each post
+        processed_count = 0
+        posts.each do |post|
+          title = post["title"]
+          slug = post["slug"]
+          published = post["status"] == "published" ? !post["published_at"].nil? : nil
+          published_at = post["published_at"]&.split("T")&.first
+          
+          puts "\n[#{processed_count + 1}/#{posts.size}] Processing '#{title}' (#{slug})".cyan
+          
+          # Get content from the most appropriate source
+          # First try markdown, then mobiledoc plaintext, then html
+          content = nil
+          
+          if post["markdown"] && !post["markdown"].empty?
+            content = post["markdown"]
+            source = "markdown"
+          elsif post["html"] && !post["html"].empty?
+            content = post["html"]
+            source = "html"
+            puts "  Note: Using HTML content (markdown not available)".yellow if @verbose
+          elsif post["plaintext"] && !post["plaintext"].empty?
+            content = post["plaintext"]
+            source = "plaintext"
+            puts "  Note: Using plaintext content (markdown and HTML not available)".yellow if @verbose
+          else
+            puts "  Warning: No content found for post '#{title}'".yellow
+            next
+          end
+          
+          # Replace Ghost URL placeholders if present
+          content = content.gsub(/__GHOST_URL__/, "")
+          
+          # Get tags for this post
+          tags = []
+          if ghost_data["db"][0]["data"]["posts_tags"]
+            post_tags = ghost_data["db"][0]["data"]["posts_tags"].select { |pt| pt["post_id"] == post["id"] }
+            
+            post_tags.each do |pt|
+              tag = ghost_data["db"][0]["data"]["tags"].find { |t| t["id"] == pt["tag_id"] }
+              tags << tag["name"] if tag
+            end
+          end
+          
+          # Get feature image
+          feature_image = post["feature_image"]
+          feature_image&.gsub!(/__GHOST_URL__/, "")
+          
+          # Create markdown file with proper frontmatter
+          filename = File.join(output_dir, "#{slug}.md")
+          
+          File.open(filename, "w") do |file|
+            file.puts "---"
+            file.puts "title: \"#{title}\""
+            file.puts "published_at: #{published_at}" if published_at
+            file.puts "slug: #{slug}"
+            file.puts "published: #{published}" if published
+            
+            # Add meta description if available
+            if post["custom_excerpt"] && !post["custom_excerpt"].empty?
+              file.puts "meta_description: \"#{post['custom_excerpt']}\""
+            end
+            
+            # Add tags if available
+            unless tags.empty?
+              file.puts "tags:"
+              tags.each do |tag|
+                file.puts "  - #{tag}"
+              end
+            end
+            
+            file.puts "---"
+            file.puts
+            file.puts content
+          end
+          
+          puts "  ✅ Created: #{filename} (from #{source})".green
+          processed_count += 1
+          
+          # Upload the post if requested
+          if @token && !@dry_run
+            upload_file(filename)
+          elsif @dry_run
+            puts "  DRY RUN: Would upload #{filename}".yellow
+          end
+        end
+        
+        puts "\n✅ Conversion complete! #{processed_count} markdown files created in #{output_dir}/".green
+        
+      rescue JSON::ParserError => e
+        puts "❌ Error parsing Ghost export JSON: #{e.message}".red
+      rescue => e
+        puts "❌ Error processing Ghost export: #{e.message}".red
+        puts e.backtrace.join("\n") if @verbose
+      end
+    end
+
     def self.run(args, testing = false)
       command = args.shift
-      commands = %w[list show create update delete upload download help]
+      commands = %w[list show create update delete upload download ghost-import help]
 
       unless commands.include?(command)
         puts "Unknown command: #{command}".red
@@ -168,11 +289,13 @@ module WillowCampCLI
 
       # Parse command-line options
       options = {
-        token: ENV["WILLOW_API_TOKEN"],
+        token: ENV["WILLOW_CAMP_API_TOKEN"],
         directory: ".",
         file: nil,
         slug: nil,
         output: nil,
+        ghost_export: nil,
+        output_dir: "markdown",
         dry_run: false,
         verbose: false
       }
@@ -188,6 +311,7 @@ module WillowCampCLI
         opts.separator "  delete              Delete a post by slug"
         opts.separator "  upload              Bulk upload posts from a directory"
         opts.separator "  download            Download a post to a Markdown file"
+        opts.separator "  ghost-import        Import posts from a Ghost export file"
         opts.separator "  help                Show this help message"
         opts.separator ""
         opts.separator "Options:"
@@ -212,6 +336,14 @@ module WillowCampCLI
 
         opts.on("-o", "--output FILE", "Output file (for download)") do |file|
           options[:output] = file
+        end
+
+        opts.on("-g", "--ghost-export FILE", "Ghost export JSON file") do |file|
+          options[:ghost_export] = file
+        end
+
+        opts.on("--output-dir DIRECTORY", "Output directory for Ghost import (default: 'markdown')") do |dir|
+          options[:output_dir] = dir
         end
 
         opts.on("--dry-run", "Show what would be done without making actual changes") do
@@ -258,10 +390,15 @@ module WillowCampCLI
         end
       when "upload"
         # No specific validation needed beyond the common ones
+      when "ghost-import"
+        if !options[:ghost_export]
+          puts "Error: Ghost export file is required for ghost-import command (use --ghost-export)".red
+          exit 1
+        end
       end
 
-      # Common validation for token (except for dry runs)
-      unless options[:token] || options[:dry_run]
+      # Common validation for token (except for dry runs and ghost-import when not uploading)
+      unless options[:token] || options[:dry_run] || (command == "ghost-import" && !options[:token])
         puts "Error: API token is required (unless using --dry-run)".red
         puts "Try 'willow-camp help' for more information"
         exit 1
@@ -288,6 +425,8 @@ module WillowCampCLI
           client.upload_all
         when "download"
           client.download_post(options[:output])
+        when "ghost-import"
+          client.ghost_import(options[:ghost_export], options[:output_dir])
         end
       rescue => e
         puts "Error: #{e.message}".red
