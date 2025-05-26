@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.3] - 2025-05-26
+
+- Convert ghost html to markdown when importing
+
 ## [0.1.3] - 2025-05-25
 
 - Bumping version for CI

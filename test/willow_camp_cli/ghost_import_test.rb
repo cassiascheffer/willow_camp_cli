@@ -159,7 +159,7 @@ module WillowCampCLI
                   "slug" => "test-post",
                   "status" => "published",
                   "published_at" => "2025-05-01T12:00:00.000Z",
-                  "markdown" => "# Test Post Content\n\nThis is a test post.",
+                  "html" => "<h1>Test Post Content</h1><p>This is a test post.</p>",
                   "feature_image" => "__GHOST_URL__/content/images/test-image.jpg",
                   "custom_excerpt" => "This is a test excerpt"
                 },
@@ -176,7 +176,7 @@ module WillowCampCLI
                   "title" => "Draft Post",
                   "slug" => "draft-post",
                   "status" => "draft",
-                  "markdown" => "# Draft Post\n\nThis is a draft post."
+                  "html" => "<h1>Draft Post</h1><p>This is a draft post.</p>"
                 }
               ],
               "tags" => [

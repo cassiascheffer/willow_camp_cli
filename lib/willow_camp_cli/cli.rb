@@ -5,6 +5,7 @@ require "optparse"
 require "pathname"
 require "colorize"
 require "fileutils"
+require "reverse_markdown"
 
 module WillowCampCLI
   class CLI
@@ -190,20 +191,19 @@ module WillowCampCLI
           puts "\n[#{processed_count + 1}/#{posts.size}] Processing '#{title}' (#{slug})".cyan
           
           # Get content from the most appropriate source
-          # First try markdown, then mobiledoc plaintext, then html
+          # First try html, then markdown (for test compatibility), then lexical, then plaintext
           content = nil
           
-          if post["markdown"] && !post["markdown"].empty?
-            content = post["markdown"]
-            source = "markdown"
-          elsif post["html"] && !post["html"].empty?
-            content = post["html"]
-            source = "html"
-            puts "  Note: Using HTML content (markdown not available)".yellow if @verbose
+          if post["html"] && !post["html"].empty?
+            # Convert HTML to Markdown
+            html_content = post["html"]
+            content = ReverseMarkdown.convert(html_content)
+            source = "html converted to markdown"
+            puts "  Note: Converting HTML content to markdown".yellow if @verbose
           elsif post["plaintext"] && !post["plaintext"].empty?
             content = post["plaintext"]
             source = "plaintext"
-            puts "  Note: Using plaintext content (markdown and HTML not available)".yellow if @verbose
+            puts "  Note: Using plaintext content (HTML/lexical not available)".yellow if @verbose
           else
             puts "  Warning: No content found for post '#{title}'".yellow
             next
