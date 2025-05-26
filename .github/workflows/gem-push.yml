@@ -36,5 +36,10 @@ jobs:
         env:
           GEM_HOST_API_KEY: "Bearer ${{secrets.GH_GEM_HOST_TOKEN}}"
           OWNER: ${{ github.repository_owner }}
+      - name: Debug Git State
+        run: |
+          git status
+          git diff
+          git ls-files --others --exclude-standard
       - name: Publish to RubyGems
         uses: rubygems/release-gem@v1

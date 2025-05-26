@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.9] - 2025-05-26
+
+- debug gem publishing
+
 ## [0.1.8] - 2025-05-26
 
 - update gem publishing

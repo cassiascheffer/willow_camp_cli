@@ -53,46 +53,50 @@ Options:
 
 ## Examples
 
+```sh
+export WILLOW_CAMP_API_TOKEN=<your token>
+```
+
 ### List all posts
 
 ```bash
-willow-camp list -u https://yourblog.example.com -t your-api-token
+willow-camp list
 ```
 
 ### Show a single post
 
 ```bash
-willow-camp show -u https://yourblog.example.com -t your-api-token -s my-post-slug
+willow-camp show -s my-post-slug
 ```
 
 ### Create a new post from a Markdown file
 
 ```bash
-willow-camp create -u https://yourblog.example.com -t your-api-token -f path/to/post.md
+willow-camp create -f path/to/post.md
 ```
 
 ### Update an existing post
 
 ```bash
-willow-camp update -u https://yourblog.example.com -t your-api-token -s my-post-slug -f path/to/updated-post.md
+willow-camp update -s my-post-slug -f path/to/updated-post.md
 ```
 
 ### Delete a post
 
 ```bash
-willow-camp delete -u https://yourblog.example.com -t your-api-token -s my-post-slug
+willow-camp delete -s my-post-slug
 ```
 
 ### Bulk upload posts from a directory
 
 ```bash
-willow-camp upload -u https://yourblog.example.com -t your-api-token -d path/to/markdown/files
+willow-camp upload -d path/to/markdown/files
 ```
 
 ### Download a post to a file
 
 ```bash
-willow-camp download -u https://yourblog.example.com -t your-api-token -s my-post-slug -o path/to/save.md
+willow-camp download -s my-post-slug -o path/to/save.md
 ```
 
 ### Import posts from a Ghost export file
@@ -102,7 +106,7 @@ willow-camp download -u https://yourblog.example.com -t your-api-token -s my-pos
 willow-camp ghost-import --ghost-export path/to/ghost-export.json --output-dir path/to/output
 
 # Convert and upload in one step
-willow-camp ghost-import -t your-api-token -g path/to/ghost-export.json --output-dir path/to/output
+willow-camp ghost-import -g path/to/ghost-export.json --output-dir path/to/output
 ```
 
 ## Environment Variables
