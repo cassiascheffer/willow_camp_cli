@@ -186,7 +186,7 @@ module WillowCampCLI
       @cli.instance_variable_set(:@dry_run, true) # Enable dry run on the existing @cli instance
 
       local_file_name = "dry-run-new.md"
-      local_file_path = File.join(@test_dir, local_file_name)
+      # local_file_path = File.join(@test_dir, local_file_name) # Unused variable
       local_content = "Dry run new content"
 
       mock_local_files({ local_file_name => { mtime: @current_time, content: local_content }})
