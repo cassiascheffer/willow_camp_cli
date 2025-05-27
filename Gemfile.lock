@@ -22,6 +22,8 @@ GEM
     json (2.12.2)
     mini_portile2 (2.8.9)
     minitest (5.25.5)
+    mocha (2.2.0)
+      ruby2_keywords (>= 0.0.5)
     nokogiri (1.18.8)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
@@ -33,6 +35,8 @@ GEM
     reverse_markdown (2.1.1)
       nokogiri
     rexml (3.4.1)
+    ruby2_keywords (0.0.5)
+    timecop (0.9.10)
     webmock (3.25.1)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
@@ -45,7 +49,9 @@ PLATFORMS
 DEPENDENCIES
   bundler (~> 2.0)
   minitest (~> 5.0)
+  mocha (~> 2.2.0)
   rake (~> 13.0)
+  timecop (~> 0.9)
   webmock (~> 3.18)
   willow_camp_cli!
 
