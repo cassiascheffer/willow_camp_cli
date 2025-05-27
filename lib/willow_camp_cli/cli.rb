@@ -278,7 +278,7 @@ module WillowCampCLI
 
     def self.run(args, testing = false)
       command = args.shift
-      commands = %w[list show create update delete upload download ghost-import help]
+      commands = %w[list show create update delete upload download ghost-import sync help]
 
       unless commands.include?(command)
         puts "Unknown command: #{command}".red
@@ -312,6 +312,7 @@ module WillowCampCLI
         opts.separator "  upload              Bulk upload posts from a directory"
         opts.separator "  download            Download a post to a Markdown file"
         opts.separator "  ghost-import        Import posts from a Ghost export file"
+        opts.separator "  sync                Sync posts from a directory to Willow Camp"
         opts.separator "  help                Show this help message"
         opts.separator ""
         opts.separator "Options:"
@@ -427,6 +428,8 @@ module WillowCampCLI
           client.download_post(options[:output])
         when "ghost-import"
           client.ghost_import(options[:ghost_export], options[:output_dir])
+        when "sync"
+          client.sync_directory
         end
       rescue => e
         puts "Error: #{e.message}".red
@@ -434,7 +437,96 @@ module WillowCampCLI
       end
     end
 
+    # Sync directory with remote posts
+    def sync_directory
+      puts "🔄 Syncing directory '#{@directory}' with #{API_URL}...".blue
+
+      # 1. Get local files
+      local_files = {}
+      find_markdown_files.each do |file_path|
+        slug = get_slug_from_path(file_path)
+        local_files[slug] = { path: file_path, mtime: File.mtime(file_path) }
+      end
+      puts "Found #{local_files.size} local Markdown file(s).".cyan if @verbose
+
+      # 2. Get remote posts
+      remote_posts = {}
+      response = api_request(:get, "/api/posts?per_page=1000") # Assuming max 1000 posts for now
+      if response
+        posts_data = JSON.parse(response.body)["posts"]
+        posts_data.each do |post|
+          remote_posts[post["slug"]] = { id: post["id"], updated_at: Time.parse(post["updated_at"]), raw: post }
+        end
+      else
+        puts "❌ Failed to fetch remote posts. Aborting sync.".red
+        return
+      end
+      puts "Found #{remote_posts.size} remote post(s).".cyan if @verbose
+
+      # 3. Sync Local to Remote
+      puts "\n--- Syncing local changes to remote ---".blue
+      local_files.each do |slug, local_file|
+        @slug = slug # Set instance variable for helper methods
+
+        if remote_posts.key?(slug)
+          # Post exists remotely, check if update is needed
+          remote_post = remote_posts[slug]
+          # Ensure updated_at is not nil and is a valid time object
+          if remote_post[:updated_at] && local_file[:mtime] > remote_post[:updated_at]
+            puts "  Local file '#{local_file[:path]}' is newer than remote post '#{slug}'.".yellow
+            if @dry_run
+              puts "    DRY RUN: Would update remote post '#{slug}'.".magenta
+            else
+              puts "    Updating remote post '#{slug}'...".magenta
+              update_post(File.read(local_file[:path]))
+            end
+          else
+            puts "  Local file '#{local_file[:path]}' is same or older than remote. Skipping.".gray if @verbose
+          end
+        else
+          # Post does not exist remotely, create it
+          puts "  Local file '#{local_file[:path]}' (slug: '#{slug}') not found remotely.".yellow
+          if @dry_run
+            puts "    DRY RUN: Would create remote post '#{slug}' from '#{local_file[:path]}'.".magenta
+          else
+            puts "    Creating remote post '#{slug}' from '#{local_file[:path]}'.".magenta
+            upload_file(local_file[:path]) # upload_file uses the file_path to derive slug and content
+          end
+        end
+      end
+
+      # 4. Sync Remote to Local
+      puts "\n--- Syncing remote changes to local ---".blue
+      remote_posts.each do |slug, remote_post|
+        @slug = slug # Set instance variable for helper methods
+
+        unless local_files.key?(slug)
+          puts "  Remote post '#{slug}' not found locally.".yellow
+          target_path = File.join(@directory, "#{slug}.md")
+          if @dry_run
+            puts "    DRY RUN: Would download remote post '#{slug}' to '#{target_path}'.".magenta
+          else
+            puts "    Downloading remote post '#{slug}' to '#{target_path}'...".magenta
+            # download_post needs @slug to be set, and optionally an output_path
+            download_post(target_path)
+          end
+        end
+      end
+
+      # @slug was temporarily modified for calls to update_post/download_post.
+      # It's good practice to restore it if it was part of initial options,
+      # but for sync, it's not an input. Future commands might need it.
+      # For now, setting to nil if not used by sync directly.
+      @slug = nil # Or restore from initial options if that becomes relevant.
+
+      puts "\n✅ Sync complete!".green
+    end
+
     private
+
+    def get_slug_from_path(file_path)
+      File.basename(file_path, ".md")
+    end
 
     def find_markdown_files
       Dir.glob(File.join(@directory, "**", "*.md"))

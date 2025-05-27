@@ -35,6 +35,7 @@ Commands:
   upload              Bulk upload posts from a directory
   download            Download a post to a Markdown file
   ghost-import        Import posts from a Ghost export file
+  sync                Sync a local directory with remote posts
   help                Show this help message
 
 Options:
@@ -107,6 +108,18 @@ willow-camp ghost-import --ghost-export path/to/ghost-export.json --output-dir p
 
 # Convert and upload in one step
 willow-camp ghost-import -g path/to/ghost-export.json --output-dir path/to/output
+```
+
+### Sync a local directory with remote posts
+
+This command will compare the Markdown files in the specified directory with the posts on your Willow Camp site.
+- New local files will be uploaded as new posts.
+- Local files that are newer than their remote counterparts will update the remote post.
+- Remote posts not found locally will be downloaded to the directory.
+- Use `--dry-run` to see what changes would be made without actually performing them.
+
+```bash
+willow-camp sync -d path/to/markdown/files
 ```
 
 ## Environment Variables
